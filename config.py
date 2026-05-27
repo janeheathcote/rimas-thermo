@@ -1,0 +1,10 @@
+CHANNEL = 1                         # LS240 uses numeric channel indices, 1-8
+SENSOR_TYPE = "PLATINUM_RTD"        # PT100    
+USE_KELVIN_READING = True
+LS240_COM_PORT = "COM4"
+SETPOINT_K = 295 #TEMP
+LOOP_DT_S = 5 #TEMP
+KP = 1 #TEMP
+KI = 0 #TEMP
+OUTPUT_MIN = 5 #TEMP
+OUTPUT_MAX = 5 #TEMP
