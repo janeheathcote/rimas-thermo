@@ -7,12 +7,13 @@ You'll need the official Lake Shore Python driver:
 References:
 - LS240 is documented in the driver docs.
 - https://lake-shore-python-driver.readthedocs.io/en/1.5.1/model_240.html
+- lake-shore-python-driver.readthedocs.io/_/downloads/en/latest/pdf/
 
 """
 
 
 
-from config import CHANNEL, SENSOR_TYPE, USE_KELVIN_READING, LS240_COM_PORT
+from config import CHANNEL, USE_KELVIN_READING, LS240_COM_PORT
 
 def open_ls240():
     """
@@ -20,16 +21,31 @@ def open_ls240():
     Returns float.
     """
     
-    from lakeshore import Model240
+    from lakeshore import Model240, Model240InputParameter
     
     com_port = LS240_COM_PORT
     my_model_240 = Model240(com_port=com_port)
     
+    # set PROFIBUS address to 123 (arbitrary, 1-125)
+    my_model_240.set_profibus_address("123")
+    
+    config = Model240InputParameter(
+        my_model_240.SensorTypes.PLATINUM_RTD, # sensor type = PT100
+        False,
+        False,
+        my_model_240.Units.KELVIN,
+        True,
+        my_model_240.InputRange.RANGE_PTRTD_1_KIL_OHMS # the only PTRTD range available
+        )
+    
     # set the sensor type
-    my_model_240.set_input_sensor(CHANNEL, SENSOR_TYPE)
+    my_model_240.set_input_parameter(CHANNEL, config)
+
     
     print("IDN: {}".format(my_model_240.query('*IDN?')))
     print("Profibus connection status: {}".format(my_model_240.get_profibus_connection_status()))
+    print("Sensor type: {}".format(my_model_240.get_input_parameter(CHANNEL)))
+
 
     return my_model_240
 
@@ -51,7 +67,7 @@ def read_sensor(inst, channel: int = CHANNEL) -> float:
 
 
 
-def read_value(inst, sensor: string = SENSOR_TYPE, channel: int = CHANNEL, use_kelvin: bool = USE_KELVIN_READING) -> float:
+def read_value(inst, channel: int = CHANNEL, use_kelvin: bool = USE_KELVIN_READING) -> float:
     """
     Read value from LS240:
     - reads Kelvin if use_kelvin=True

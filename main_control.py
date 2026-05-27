@@ -59,6 +59,7 @@ def run_control_loop() -> None:
         # send that to the heater
 
         # print the values
+        print(u)
 
         time.sleep(LOOP_DT_S)
 
