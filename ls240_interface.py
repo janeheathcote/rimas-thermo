@@ -1,13 +1,16 @@
 """
-Reading from a Lake Shore 240.
+Reading from a Lake Shore 240 with a PT100.
 
 You'll need the official Lake Shore Python driver:
     pip install lakeshore
 
+And download Lake Shore's MeasureLINK utility
+- then pick appropriate calibration curve (“IEC PT100 RTD”)
+
 References:
 - LS240 is documented in the driver docs.
 - https://lake-shore-python-driver.readthedocs.io/en/1.5.1/model_240.html
-- lake-shore-python-driver.readthedocs.io/_/downloads/en/latest/pdf/
+- https://lake-shore-python-driver.readthedocs.io/_/downloads/en/latest/pdf/ (pg 252)
 
 """
 
@@ -29,22 +32,17 @@ def open_ls240():
     # set PROFIBUS address to 123 (arbitrary, 1-125)
     my_model_240.set_profibus_address("123")
     
-    config = Model240InputParameter(
-        my_model_240.SensorTypes.PLATINUM_RTD, # sensor type = PT100
-        False,
-        False,
-        my_model_240.Units.KELVIN,
-        True,
-        my_model_240.InputRange.RANGE_PTRTD_1_KIL_OHMS # the only PTRTD range available
-        )
-    
-    # set the sensor type
+    # set sensor type = PT100
+    config = Model240InputParameter(my_model_240.SensorTypes.PLATINUM_RTD, True, False, my_model_240.Units.KELVIN, True, 0)
     my_model_240.set_input_parameter(CHANNEL, config)
 
     
     print("IDN: {}".format(my_model_240.query('*IDN?')))
     print("Profibus connection status: {}".format(my_model_240.get_profibus_connection_status()))
-    print("Sensor type: {}".format(my_model_240.get_input_parameter(CHANNEL)))
+    
+    header_info = my_model_240.get_curve_header(1)
+    print("Curve Name: ", header_info.curve_name)
+
 
 
     return my_model_240
