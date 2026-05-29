@@ -17,6 +17,10 @@ References:
 
 
 from config import CHANNEL, USE_KELVIN_READING, LS240_COM_PORT
+from serial.tools.list_ports import comports
+
+
+
 
 def open_ls240():
     """
@@ -38,17 +42,14 @@ def open_ls240():
 
     
     print("IDN: {}".format(my_model_240.query('*IDN?')))
-    print("Profibus connection status: {}".format(my_model_240.get_profibus_connection_status()))
-    
-    header_info = my_model_240.get_curve_header(1)
-    print("Curve Name: ", header_info.curve_name)
-
-
+    #print("Profibus connection status: {}".format(my_model_240.get_profibus_connection_status()))
+    #header_info = my_model_240.get_curve_header(1)
+    #print("Curve Name: ", header_info.curve_name)
 
     return my_model_240
 
 
-def read_kelvin(inst, channel: int = CHANNEL) -> float:
+def read_kelvin(inst, channel=CHANNEL):
     """
     Read a Kelvin temperature.
     Returns float.
@@ -56,7 +57,7 @@ def read_kelvin(inst, channel: int = CHANNEL) -> float:
     return float(inst.get_kelvin_reading(channel))
 
 
-def read_sensor(inst, channel: int = CHANNEL) -> float:
+def read_sensor(inst, channel=CHANNEL):
     """
     Read the raw sensor value.
     Returns float.
@@ -65,7 +66,7 @@ def read_sensor(inst, channel: int = CHANNEL) -> float:
 
 
 
-def read_value(inst, channel: int = CHANNEL, use_kelvin: bool = USE_KELVIN_READING) -> float:
+def read_value(inst, channel=CHANNEL, use_kelvin=USE_KELVIN_READING):
     """
     Read value from LS240:
     - reads Kelvin if use_kelvin=True
@@ -77,6 +78,4 @@ def read_value(inst, channel: int = CHANNEL, use_kelvin: bool = USE_KELVIN_READI
         return read_kelvin(inst, channel)
     else:
         return read_sensor(inst, channel)
-    
-    
     

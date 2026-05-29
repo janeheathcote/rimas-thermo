@@ -9,7 +9,7 @@ from config import CHANNEL, USE_KELVIN_READING
 from ls240_interface import open_ls240, read_value
 
 
-def main() -> None:
+def main():
     
     inst = open_ls240()
 
