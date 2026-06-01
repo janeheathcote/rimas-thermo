@@ -1,5 +1,5 @@
 """
-Test code for LS240.
+Test code that reads temperatures from the LS240.
 """
 
 

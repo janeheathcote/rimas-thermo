@@ -15,11 +15,8 @@ References:
 """
 
 
-
-from config import CHANNEL, USE_KELVIN_READING, LS240_COM_PORT
-from serial.tools.list_ports import comports
-
-
+from lakeshore import Model240, Model240InputParameter
+from config import CHANNEL, UNITS, USE_KELVIN_READING, LS240_COM_PORT, SENSOR_TYPE
 
 
 def open_ls240():
@@ -27,24 +24,19 @@ def open_ls240():
     Open a connection to the Lake Shore 240.
     Returns float.
     """
-    
-    from lakeshore import Model240, Model240InputParameter
-    
-    com_port = LS240_COM_PORT
-    my_model_240 = Model240(com_port=com_port)
-    
-    # set PROFIBUS address to 123 (arbitrary, 1-125)
-    my_model_240.set_profibus_address("123")
-    
-    # set sensor type = PT100
-    config = Model240InputParameter(my_model_240.SensorTypes.PLATINUM_RTD, True, False, my_model_240.Units.KELVIN, True, 0)
-    my_model_240.set_input_parameter(CHANNEL, config)
+        
+    my_model_240 = Model240(com_port=LS240_COM_PORT)
 
+    config = Model240InputParameter(
+        SENSOR_TYPE,
+        True,
+        False,
+        UNITS,
+        True,
+        0
+    )
     
-    print("IDN: {}".format(my_model_240.query('*IDN?')))
-    #print("Profibus connection status: {}".format(my_model_240.get_profibus_connection_status()))
-    #header_info = my_model_240.get_curve_header(1)
-    #print("Curve Name: ", header_info.curve_name)
+    my_model_240.set_input_parameter(CHANNEL, config)
 
     return my_model_240
 
