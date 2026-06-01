@@ -1,12 +1,16 @@
 """
-Main temperature-control loop.
+Main temperature-control loop using simple-pid.
 
-Currently:
-- Reads temperature (or raw sensor value) from the LS240 temp sensor
-
+- Reads temperature from the LS240
+- Runs a PI loop
+- Drives a heater via Raspberry Pi PWM
 """
 
 import time
+from gpiozero import PWMOutputDevice
+from simple_pid import PID
+from ls240_interface import open_ls240, read_value
+
 
 from config import (
     TEMP_CHANNEL,
@@ -17,52 +21,70 @@ from config import (
     KI,
     OUTPUT_MIN,
     OUTPUT_MAX,
-    MAX_SAFE_TEMP_K,
+    PWM_PIN,
+    PWM_FREQ_HZ,
 )
 
-from ls240_interface import open_ls240, read_value
-from pi_controller import PIController # <- TEMP! THIS MIGHT BE WRONG
-#from heater_output import 
 
-
-def run_control_loop() -> None:
-    """
-    Open the Lake Shore 240, repeatedly read temperature,
-    compute a PI control output, and send that output to the heater.
-    """
-    
+def run_control_loop():
     inst = open_ls240()
-    
-    # heater = 
 
-    controller = PIController(
-        kp=KP,
-        ki=KI,
-        setpoint=SETPOINT_K,
-        u_min=OUTPUT_MIN,
-        u_max=OUTPUT_MAX,
+    # Kd=0 to make it a PI controller
+    pid = PID(KP, KI, 0.0, setpoint=SETPOINT_K)
+
+    # set output limits so that PID output = PWM duty cycle
+    # between 0.0 (off) and 1.0 (full power)
+    pid.output_limits = (OUTPUT_MIN, OUTPUT_MAX)
+
+    pid.sample_time = LOOP_DT_S
+
+    # PWM
+    heater_pwm = PWMOutputDevice(
+        pin=PWM_PIN,
+        active_high=True,
+        initial_value=0.0,
+        frequency=PWM_FREQ_HZ,
     )
-    
 
     print("Starting control loop...")
     print(f"Setpoint           : {SETPOINT_K}")
     print(f"Loop interval (s)  : {LOOP_DT_S}")
     print(f"Kp, Ki             : {KP}, {KI}")
+    print(f"PWM pin, freq (Hz) : {PWM_PIN}, {PWM_FREQ_HZ}")
     print()
 
-    while True:
-        measured = read_value(inst, channel=TEMP_CHANNEL, use_kelvin=USE_KELVIN_READING)
+    try:
+        while True:
+            # read temp
+            measured = read_value(
+                inst,
+                channel=TEMP_CHANNEL,
+                use_kelvin=USE_KELVIN_READING,
+            )
 
-        # get value from PI control loop
-        u = controller.update(measured, LOOP_DT_S)
-        
-        # send that to the heater
+            # get PID output
+            u = pid(measured)
 
-        # print the values
-        print(u)
+            # PID output -> duty cycle
+            duty_cycle = u
 
-        time.sleep(LOOP_DT_S)
+            # PWM
+            heater_pwm.value = duty_cycle  # 0.0–1.0 maps to 0–100% duty
 
+            # debug print statement:
+            error = pid.setpoint - measured
+            print(
+                f"T_meas={measured:.3f} K, "
+                f"error={error:.3f}, "
+                f"u={u:.3f}, "
+                f"duty={duty_cycle:.3f}"
+            )
+
+            time.sleep(LOOP_DT_S)
+
+    finally:
+        heater_pwm.value = 0.0
+        heater_pwm.close()
 
 
 if __name__ == "__main__":
