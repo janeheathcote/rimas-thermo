@@ -19,6 +19,7 @@ from config import (
     LOOP_DT_S,
     KP,
     KI,
+    KD,
     OUTPUT_MIN,
     OUTPUT_MAX,
     PWM_PIN,
@@ -27,10 +28,12 @@ from config import (
 
 
 def run_control_loop():
+    
+    # open connection to LakeShore
     inst = open_ls240()
 
     # Kd=0 to make it a PI controller
-    pid = PID(KP, KI, 0.0, setpoint=SETPOINT_K)
+    pid = PID(KP, KI, KD, setpoint=SETPOINT_K)
 
     # set output limits so that PID output = PWM duty cycle
     # between 0.0 (off) and 1.0 (full power)
@@ -39,10 +42,8 @@ def run_control_loop():
     pid.sample_time = LOOP_DT_S
 
     # PWM
-    heater_pwm = PWMOutputDevice(
+    pwm = PWMOutputDevice(
         pin=PWM_PIN,
-        active_high=True,
-        initial_value=0.0,
         frequency=PWM_FREQ_HZ,
     )
 
@@ -65,11 +66,11 @@ def run_control_loop():
             # get PID output
             u = pid(measured)
 
-            # PID output -> duty cycle
+            # PID output (0.0-1.0) -> duty cycle (0–100%)
             duty_cycle = u
 
             # PWM
-            heater_pwm.value = duty_cycle  # 0.0–1.0 maps to 0–100% duty
+            pwm.value = duty_cycle
 
             # debug print statement:
             error = pid.setpoint - measured
@@ -81,10 +82,13 @@ def run_control_loop():
             )
 
             time.sleep(LOOP_DT_S)
+            
+    except KeyboardInterrupt:
+        print("Stopping control loop.")
 
     finally:
-        heater_pwm.value = 0.0
-        heater_pwm.close()
+        pwm.value = 0.0
+        pwm.close()
 
 
 if __name__ == "__main__":

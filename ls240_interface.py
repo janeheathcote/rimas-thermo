@@ -1,11 +1,11 @@
 """
-Reading from a Lake Shore 240 with a PT100.
+Reading from a LakeShore 240 (LS240).
 
-You'll need the official Lake Shore Python driver:
+You'll need the official LakeShore Python driver:
     pip install lakeshore
 
-And download Lake Shore's MeasureLINK utility
-- then pick appropriate calibration curve (“IEC PT100 RTD”)
+And download LakeShore's MeasureLINK utility
+- then pick appropriate calibration curve (e.g. “IEC PT100 RTD” for a PT100 sensor)
 
 References:
 - LS240 is documented in the driver docs.
@@ -21,7 +21,7 @@ from config import CHANNEL, UNITS, USE_KELVIN_READING, LS240_COM_PORT, SENSOR_TY
 
 def open_ls240():
     """
-    Open a connection to the Lake Shore 240.
+    Open a connection to the LS240.
     Returns float.
     """
         
