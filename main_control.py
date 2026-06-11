@@ -10,10 +10,11 @@ import time
 from gpiozero import PWMOutputDevice
 from simple_pid import PID
 from ls240_interface import open_ls240, read_value
+import matplotlib.pyplot as plt
 
 
 from config import (
-    TEMP_CHANNEL,
+    CHANNEL,
     USE_KELVIN_READING,
     SETPOINT_K,
     LOOP_DT_S,
@@ -59,7 +60,7 @@ def run_control_loop():
             # read temp
             measured = read_value(
                 inst,
-                channel=TEMP_CHANNEL,
+                channel=CHANNEL,
                 use_kelvin=USE_KELVIN_READING,
             )
 
@@ -89,7 +90,78 @@ def run_control_loop():
     finally:
         pwm.value = 0.0
         pwm.close()
+        
+        
+
+# start with 10 minutes
+def run_step_test(duration_s=600.0):
+    
+    inst = open_ls240()
+
+    pid = PID(KP, KI, KD, setpoint=SETPOINT_K)
+    pid.output_limits = (OUTPUT_MIN, OUTPUT_MAX)  # (0.0, 1.0)
+    pid.sample_time = LOOP_DT_S
+
+    # PWM
+    pwm = PWMOutputDevice(
+        pin=PWM_PIN,
+        frequency=PWM_FREQ_HZ,
+    )
+
+    t0 = time.time()
+
+    times = []
+    temps = []
+    duties = []
+
+    print(f"Starting step test for {duration_s} s with Kp={KP}, Ki={KI}, Kd={KD}")
+    print(f"Setpoint: {SETPOINT_K} K")
+
+    try:
+        while True:
+            now = time.time()
+            elapsed = now - t0
+            if elapsed >= duration_s:
+                break
+
+            measured = read_value(inst, channel=CHANNEL, use_kelvin=USE_KELVIN_READING)
+
+            u = pid(measured)  # in [OUTPUT_MIN, OUTPUT_MAX]
+
+            duty_cycle = u
+            pwm.value = duty_cycle
+
+            times.append(elapsed)
+            temps.append(measured)
+            duties.append(duty_cycle)
+
+            print(
+                f"t={elapsed:6.1f}s  T={measured:.3f}K  "
+                f"error={pid.setpoint - measured:.3f}  "
+                f"u/duty={duty_cycle:.3f}"
+            )
+
+            time.sleep(LOOP_DT_S)
+
+    finally:
+        pwm.value = 0.0
+        pwm.close()
+
+    # PLOT:
+    fig, ax1 = plt.subplots()
+
+    ax1.set_xlabel("Time (s)")
+    ax1.set_ylabel("Temperature (K)", color="tab:red")
+    ax1.plot(times, temps, color="tab:red", label="Temperature")
+    ax1.axhline(SETPOINT_K, color="tab:red", linestyle="--", alpha=0.5, label="Setpoint")
+    ax1.tick_params(axis="y", labelcolor="tab:red")
+
+    plt.title(f"Step test: Kp={KP}, Ki={KI}, Kd={KD}")
+    fig.tight_layout()
+    plt.show()
+
 
 
 if __name__ == "__main__":
-    run_control_loop()
+    #run_control_loop()
+    run_step_test()

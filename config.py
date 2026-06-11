@@ -8,8 +8,8 @@ LS240_COM_PORT = "/dev/ttyUSB0"
 #LS240_COM_PORT = "COM4"
 
 
-SETPOINT_K = 305
-LOOP_DT_S = 5
+SETPOINT_K = 300
+LOOP_DT_S = 10
 KP = 1.0
 KI = 0.0
 KD = 0.0            # Kd=0 to make it a PI controller
