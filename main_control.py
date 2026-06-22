@@ -11,6 +11,8 @@ from gpiozero import PWMOutputDevice
 from simple_pid import PID
 from ls240_interface import open_ls240, read_value
 import matplotlib.pyplot as plt
+import datetime as dt
+import os
 
 
 from config import (
@@ -25,9 +27,10 @@ from config import (
     OUTPUT_MAX,
     PWM_PIN,
     PWM_FREQ_HZ,
+    DUR,
 )
 
-
+""" 
 def run_control_loop():
     
     # open connection to LakeShore
@@ -90,11 +93,11 @@ def run_control_loop():
     finally:
         pwm.value = 0.0
         pwm.close()
-        
+         """
         
 
 # start with 10 minutes
-def run_step_test(duration_s=600.0):
+def run_step_test(duration_s=DUR):
     
     inst = open_ls240()
 
@@ -145,8 +148,10 @@ def run_step_test(duration_s=600.0):
 
     finally:
         pwm.value = 0.0
+        pwm.off()                    # stop PWM
         pwm.close()
-
+        
+        
     # PLOT:
     fig, ax1 = plt.subplots()
 
@@ -158,7 +163,17 @@ def run_step_test(duration_s=600.0):
 
     plt.title(f"Step test: Kp={KP}, Ki={KI}, Kd={KD}")
     fig.tight_layout()
-    plt.show()
+    plt.show(block=True)
+
+    # timestamped filename to avoid overwrites
+    timestamp = dt.datetime.now().strftime("%Y%m%d_%H%M%S")
+    output_dir = f"output"
+    filename = f"temp_step_Kp{kp:.2f}_{timestamp}.png"
+    filepath = os.path.join(output_dir, filename)
+    fig.tight_layout()
+    fig.savefig(filepath, dpi=150)
+
+    print(f"Plot saved to {os.path.abspath(filename)}")
 
 
 
