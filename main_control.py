@@ -30,7 +30,7 @@ from config import (
     DUR,
 )
 
-""" 
+
 def run_control_loop():
     
     # open connection to LakeShore
@@ -92,8 +92,9 @@ def run_control_loop():
 
     finally:
         pwm.value = 0.0
+        pwm.off()
         pwm.close()
-         """
+         
         
 
 # start with 10 minutes
