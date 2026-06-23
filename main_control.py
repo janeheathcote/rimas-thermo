@@ -13,6 +13,7 @@ from ls240_interface import open_ls240, read_value
 import matplotlib.pyplot as plt
 import datetime as dt
 import os
+from ziegler_nichols_autotuner import ZieglerNicholsAutotuner
 
 
 from config import (
@@ -20,6 +21,11 @@ from config import (
     USE_KELVIN_READING,
     SETPOINT_K,
     LOOP_DT_S,
+    KP_STEP,
+    KP_CHANGE,
+    WINDOW_SIZE,
+    OSC_THRESH,
+    MIN_OSC,
     KP,
     KI,
     KD,
@@ -94,8 +100,50 @@ def run_control_loop():
         pwm.value = 0.0
         pwm.off()
         pwm.close()
-         
         
+        
+
+def tune_pid():
+
+    
+    inst = open_ls240()
+    
+    pwm = PWMOutputDevice(
+        pin=PWM_PIN,
+        frequency=PWM_FREQ_HZ,
+    )
+
+    def read_temperature():
+        return read_value(inst, channel=CHANNEL, use_kelvin=USE_KELVIN_READING)
+
+    def set_heater_power(power):
+        pwm.value = max(0.0, min(1.0, power))
+    
+    # run the PID autotuner
+    autotuner = ZieglerNicholsAutotuner(
+        sensor_func=read_temperature,
+        actuator_func=set_heater_power,
+        setpoint=SETPOINT_K,
+        min_output=OUTPUT_MIN,
+        max_output=OUTPUT_MAX,
+        kp_step=KP_STEP,
+        max_test_time=DUR,
+        oscillation_threshold=OSC_THRESH,
+        window_size=WINDOW_SIZE,
+        min_oscillations=MIN_OSC,
+        kp_change_interval_pct=KP_CHANGE,
+        start_kp=2.0
+    )
+    
+    results = autotuner.run(verbose=True, plot_results=True)
+    
+    # the recommended PID parameters:
+    if results:
+        pid_params = results['PID']  # or 'No Overshoot', 'Some Overshoot', etc.
+        print(f"Kp = {pid_params['Kp']}")
+        print(f"Ki = {pid_params['Ki']}")
+        print(f"Kd = {pid_params['Kd']}")
+
 
 # start with 10 minutes
 def run_step_test(duration_s=DUR):
@@ -149,15 +197,14 @@ def run_step_test(duration_s=DUR):
 
     finally:
         pwm.value = 0.0
-        pwm.off()                    # stop PWM
+        pwm.off()
         pwm.close()
-        
-        
+
     # PLOT:
     fig, ax1 = plt.subplots()
 
     ax1.set_xlabel("Time (s)")
-    ax1.set_ylabel("Temperature (K)", color="tab:red")
+    ax1.set_ylabel("Temperature (K)")
     ax1.plot(times, temps, color="tab:red", label="Temperature")
     ax1.axhline(SETPOINT_K, color="tab:red", linestyle="--", alpha=0.5, label="Setpoint")
     ax1.tick_params(axis="y", labelcolor="tab:red")
@@ -169,7 +216,7 @@ def run_step_test(duration_s=DUR):
     # timestamped filename to avoid overwrites
     timestamp = dt.datetime.now().strftime("%Y%m%d_%H%M%S")
     output_dir = f"output"
-    filename = f"temp_step_Kp{kp:.2f}_{timestamp}.png"
+    filename = f"temp_step_Kp{KP:.2f}_{timestamp}.png"
     filepath = os.path.join(output_dir, filename)
     fig.tight_layout()
     fig.savefig(filepath, dpi=150)
@@ -177,7 +224,7 @@ def run_step_test(duration_s=DUR):
     print(f"Plot saved to {os.path.abspath(filename)}")
 
 
-
 if __name__ == "__main__":
     #run_control_loop()
     run_step_test()
+    #tune_pid()

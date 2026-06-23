@@ -64,7 +64,7 @@ def read_value(inst, channel=CHANNEL, use_kelvin=USE_KELVIN_READING):
     - reads Kelvin if use_kelvin=True
     - otherwise reads raw sensor value
 
-    Returns float.
+    Returns temperature (float).
     """
     if use_kelvin:
         return read_kelvin(inst, channel)
